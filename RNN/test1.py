@@ -1,7 +1,7 @@
 # import heapq
-import heapq
 import pickle
 import sys
+import heapq
 
 import matplotlib.pyplot as plt
 import numpy as np
