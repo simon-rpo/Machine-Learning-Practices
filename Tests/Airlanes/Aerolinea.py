@@ -21,7 +21,7 @@ def create_dataset(dataset, look_back=1):
     dataY.append(dataset[i + look_back, 0])
   return numpy.array(dataX), numpy.array(dataY)
 # semilla aleatoria para reproducibilidad
-numpy.random.seed(7)
+numpy.random.seed(10)
 # cargamos el conjunto de datos
 dataframe = read_csv('C:\\Users\\PC\\Downloads\\test_Conv\\Tests\\Airlanes\\international-airline-passengers (1).csv', usecols=[1], engine='python',skipfooter=3)
 dataset = dataframe.values
