@@ -8,7 +8,7 @@ from PIL import Image
 
 from test1 import cnn_model_fn
 
-DATA_DIR = 'C:\\Users\\PC\\Downloads\\test_Conv\\Convolutional Models\\DatasetCreation\\data_shoes\\'
+DATA_DIR = 'C:\\Users\\PC\\Downloads\\test_Conv\\Convolutional Models\\DatasetCreation\\data_shoes\\new_set\\'
 
 ftrain = h5py.File(DATA_DIR + 'train_dataset.h5', 'r')
 ftest = h5py.File(DATA_DIR + 'test_dataset.h5', 'r')
@@ -57,24 +57,24 @@ print("Accuracy: ", pred)
 
 # # ### load self made picture
 
-orig_image = cv2.imread(
-    'C:\\Users\\PC\\Downloads\\test_Conv\\Convolutional Models\\DatasetCreation\\t_images\\t_sneaker3.jpg', 0)
-# Test
-orig_image = orig_image/255.
-orig_image = skimage.color.rgb2gray(orig_image)
-plt.imshow(orig_image, cmap='gist_gray')
-plt.show()
-orig_image = cv2.resize(orig_image, (64, 64))
-plt.imshow(orig_image, cmap='gist_gray')
-plt.show()
-picture = np.asarray(orig_image, dtype=np.float32)
-
-
-# orig_image = train_data[86]
+# orig_image = cv2.imread(
+#     'C:\\Users\\PC\\Downloads\\test_Conv\\Convolutional Models\\DatasetCreation\\t_images\\t_sneaker4.jpg', 0)
 # # Test
-# plt.imshow(orig_image.reshape(64, 64), cmap='gist_gray')
+# orig_image = orig_image/np.float(255)
+# orig_image = skimage.color.rgb2gray(orig_image)
+# plt.imshow(orig_image, cmap='gist_gray')
 # plt.show()
-# picture = np.asarray(orig_image, dtype=np.float32).reshape(-1, 64, 64, 1)
+# orig_image = cv2.resize(orig_image, (64, 64))
+# plt.imshow(orig_image, cmap='gist_gray')
+# plt.show()
+# picture = np.asarray(orig_image, dtype=np.float32)
+
+
+orig_image = eval_data[86]
+# Test
+plt.imshow(orig_image.reshape(64, 64), cmap='gist_gray')
+plt.show()
+picture = np.asarray(orig_image, dtype=np.float32).reshape(-1, 64, 64, 1)
 
 
 predict_input_fn2 = tf.estimator.inputs.numpy_input_fn(
@@ -86,11 +86,7 @@ predict_input_fn2 = tf.estimator.inputs.numpy_input_fn(
 predict_results = mnist_classifier.predict(input_fn=predict_input_fn2)
 # prediction = [gen["probabilities"] for gen in predict_results]
 # print(prediction)
-
 for x in predict_results:
     # cls.append(x['classes'])
     # probs.append(x['probabilities'])
     print(x)
-
-
-# 7 - sneaker

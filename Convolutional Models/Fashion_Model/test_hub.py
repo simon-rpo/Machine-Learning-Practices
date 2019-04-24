@@ -1,21 +1,12 @@
-# Lastest Version
-from __future__ import absolute_import, division, print_function
-
-import cv2
-import h5py
-import matplotlib.pyplot as plt
-import numpy as np
-import skimage.color
 import tensorflow as tf
 import tensorflow_hub as hub
+import numpy as np
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
-DATA_DIR = 'C:\\Users\\PC\\Downloads\\test_Conv\\Convolutional Models\\DatasetCreation\\data_shoes\\new_set\\'
 
-
-def cnn_model_fn(features, labels, mode):
-     # Load Inception-v3 model.
+def inceptionv3_model_fn(features, labels, mode):
+    # Load Inception-v3 model.
     module = hub.Module(
         "https://tfhub.dev/google/imagenet/inception_v3/feature_vector/1")
     input_layer = adjust_image(features["x"])
@@ -65,56 +56,45 @@ def adjust_image(data):
 
 def main(unused_argv):
     with tf.Graph().as_default() as g:
-            # Load training and eval data
-        ftrain = h5py.File(DATA_DIR + 'train_dataset.h5', 'r')
-        ftest = h5py.File(DATA_DIR + 'test_dataset.h5', 'r')
+        # Load MNIST data.
+        mnist = tf.contrib.learn.datasets.load_dataset("mnist")
+        train_data = mnist.train.images  # Returns np.array
+        train_labels = np.asarray(mnist.train.labels, dtype=np.int32)
+        eval_data = mnist.test.images  # Returns np.array
+        eval_labels = np.asarray(mnist.test.labels, dtype=np.int32)
 
-        train_data, train_labels = ftest['test_set_x'], ftest['test_set_y']
-        eval_data, eval_labels = ftrain['train_set_x'],  ftrain['train_set_y']
-
-        train_data = np.asarray(train_data, dtype=np.float32)
-        # train_data = train_data/255.
-        # train_data = skimage.color.rgb2gray(train_data)
-        train_labels = np.asarray(
-            train_labels, dtype=np.int32).reshape(train_labels.shape[0])
-
-        eval_data = np.asarray(eval_data, dtype=np.float32)
-        # eval_data = eval_data/255.
-        # eval_data = skimage.color.rgb2gray(eval_data)
-        eval_labels = np.asarray(
-            eval_labels, dtype=np.int32).reshape(eval_labels.shape[0])
-
-        # Testing purposes...
-        plt.imshow(train_data[21])
-        plt.show()
-
-        # Create the Estimator
-        mnist_classifier = tf.estimator.Estimator(
-            model_fn=cnn_model_fn,
-            model_dir="C:\\Users\\PC\\Downloads\\test_Conv\\Convolutional Models\\DatasetCreation\\tmp")
-
-        # Train the model
+        # create input functions for train and evaluate methods.
         train_input_fn = tf.estimator.inputs.numpy_input_fn(
             x={"x": train_data},
             y=train_labels,
-            batch_size=32,
-            num_epochs=50,
+            batch_size=10,
+            num_epochs=None,
             shuffle=True)
-
-        # Evaluate the model and print results
         eval_input_fn = tf.estimator.inputs.numpy_input_fn(
             x={"x": eval_data},
             y=eval_labels,
             num_epochs=1,
             shuffle=False)
 
-        for _ in range(50):
-            mnist_classifier.train(
-                input_fn=train_input_fn,
-                steps=1000)
+        # Create an estimator
+        classifier = tf.estimator.Estimator(
+            model_fn=inceptionv3_model_fn, model_dir="C:\\Users\\PC\\Downloads\\test_Conv\\Convolutional Models\\Fashion_Model\\tmp")
 
-            eval_results = mnist_classifier.evaluate(input_fn=eval_input_fn)
-            print(eval_results)
+        # Set up logging for predictions
+        # tensors_to_log = {"probabilities": "softmax_tensor"}
+        # logging_hook = tf.train.LoggingTensorHook(
+        #     tensors=tensors_to_log, every_n_iter=10)
+
+        # Train network.
+        classifier.train(
+            input_fn=train_input_fn,
+            steps=500,
+            #hooks=[logging_hook]
+            )
+
+        # Evaluate the model and print results.
+        eval_results = classifier.evaluate(input_fn=eval_input_fn)
+        print(eval_results)
 
 
 if __name__ == "__main__":

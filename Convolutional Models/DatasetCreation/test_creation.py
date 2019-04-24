@@ -15,8 +15,8 @@ import numpy as np
 from PIL import Image
 from sklearn.utils import shuffle
 
-OUTPUT_PATH = 'C:\\Users\\PC\\Downloads\\test_Conv\\Convolutional Models\\DatasetCreation\\data_shoes\\'
-parent_dir = 'C:\\Users\\PC\\Downloads\\test_Conv\\Convolutional Models\\DatasetCreation\\data_shoes'
+OUTPUT_PATH = 'C:\\Users\\PC\\Downloads\\test_Conv\\Convolutional Models\\DatasetCreation\\data_shoes\\new_set\\'
+parent_dir = 'C:\\Users\\PC\\Downloads\\test_Conv\\Convolutional Models\\DatasetCreation\\data_shoes\\new_set'
 
 file_ext = '*'
 classes_id = {
@@ -43,22 +43,22 @@ def extract_features(parent_dir, file_ext):
             # print(fn)
             try:
                 img = Image.open(fn)
-                if (img.size[0] >= 224):
-                    etiqueta = label2num(sub_dir)
-                    img = img.resize((64, 64), Image.ANTIALIAS)
-                    # plt.imshow(img)
-                    # plt.show()
-                    im = np.array(img)
-                    if im.shape[2] == 3:
-                        imgs.append(im)
-                        labels.append(etiqueta)
-                    else:
-                        im = cv2.cvtColor(im, cv2.COLOR_BGRA2BGR)
-                        imgs.append(im)
-                        labels.append(etiqueta)
+                # if (img.size[0] >= 224):
+                etiqueta = label2num(sub_dir)
+                img = img.resize((299, 299), Image.ANTIALIAS)
+                # plt.imshow(img)
+                # plt.show()
+                im = np.array(img)
+                if im.shape[2] == 3:
+                    imgs.append(im)
+                    labels.append(etiqueta)
+                else:
+                    im = cv2.cvtColor(im, cv2.COLOR_BGRA2BGR)
+                    imgs.append(im)
+                    labels.append(etiqueta)
             except Exception as e:
                 print("type error: " + str(e) + " image: " + fn)
-    features = np.asarray(imgs).reshape(len(imgs), 64, 64, 3)
+    features = np.asarray(imgs).reshape(len(imgs), 299, 299, 3)
     return features, np.array(labels, dtype=np.int)
 
 
@@ -90,17 +90,3 @@ print('Dataset created Successfully')
 
 ##############################################################
 ##############################################################
-
-
-# ftrain = h5py.File(OUTPUT_PATH + 'train_dataset.h5', 'r')
-# ftest = h5py.File(OUTPUT_PATH + 'test_dataset.h5', 'r')
-
-# # Divido el dataset en datos de entreno y evalucion con respectivas etiquetas
-# train_data, train_labels = ftest['test_set_x'], ftest['test_set_y']
-# eval_data, eval_labels = ftrain['train_set_x'],  ftrain['train_set_y']
-
-# plt.imshow(train_data[21])
-# plt.show()
-
-# plt.imshow(eval_data[21])
-# plt.show()
