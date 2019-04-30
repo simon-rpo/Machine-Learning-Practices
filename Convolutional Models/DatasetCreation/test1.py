@@ -12,16 +12,34 @@ import tensorflow_hub as hub
 tf.logging.set_verbosity(tf.logging.INFO)
 
 DATA_DIR = 'C:\\Users\\PC\\Downloads\\test_Conv\\Convolutional Models\\DatasetCreation\\data_shoes\\new_set\\'
+MODEL_DIR = "C:\\Users\\PC\\Downloads\\test_Conv\\Convolutional Models\\DatasetCreation\\tmp"
 
 
 def cnn_model_fn(features, labels, mode):
-     # Load Inception-v3 model.
+    # Load Inception-v3 model.
     module = hub.Module(
-        "https://tfhub.dev/google/imagenet/inception_v3/feature_vector/1")
-    input_layer = adjust_image(features["x"])
-    outputs = module(input_layer)
+        "https://tfhub.dev/google/imagenet/inception_v3/classification/1")
 
-    logits = tf.layers.dense(inputs=outputs, units=10)
+    input_layer = tf.reshape(features["x"], [-1, 299, 299, 3])
+
+    #outputs = module(input_layer)
+    outputs = module(dict(images=input_layer),
+                     signature="image_classification",
+                     as_dict=True)
+
+    # print(outputs.items())
+
+    middle_output = outputs["InceptionV3/Mixed_7c"]
+
+    avgPool = tf.layers.average_pooling2d(
+        middle_output, (2, 2), (2, 2), padding='same')
+
+    dropout1 = tf.layers.dropout(
+        inputs=avgPool, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
+
+    flatten = tf.layers.flatten(dropout1)
+
+    logits = tf.layers.dense(inputs=flatten, units=3)
 
     predictions = {
         # Generate predictions (for PREDICT and EVAL mode)
@@ -35,15 +53,24 @@ def cnn_model_fn(features, labels, mode):
         return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
 
     # Calculate Loss (for both TRAIN and EVAL modes)
-    loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
+    onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=3)
+    loss = tf.losses.softmax_cross_entropy(
+        onehot_labels=onehot_labels, logits=logits)
 
     # Configure the Training Op (for TRAIN mode)
     if mode == tf.estimator.ModeKeys.TRAIN:
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+        optimizer = tf.train.AdamOptimizer(learning_rate=1e-4)
         train_op = optimizer.minimize(
             loss=loss,
             global_step=tf.train.get_global_step())
-        return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
+
+        summary_hook = tf.train.SummarySaverHook(
+            100,
+            output_dir=MODEL_DIR+'\\tf',
+            summary_op=tf.summary.merge_all())
+
+        return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op,
+                                          training_hooks=[summary_hook])
 
     # Add evaluation metrics (for EVAL mode)
     eval_metric_ops = {
@@ -55,7 +82,7 @@ def cnn_model_fn(features, labels, mode):
 
 def adjust_image(data):
     # Reshaped to [batch, height, width, channels].
-    imgs = tf.reshape(data, [-1, 28, 28, 1])
+    imgs = tf.reshape(data, [-1, 299, 299, 3])
     # Adjust image size to that in Inception-v3 input.
     imgs = tf.image.resize_images(imgs, (299, 299))
     # Convert to RGB image.
@@ -69,8 +96,8 @@ def main(unused_argv):
         ftrain = h5py.File(DATA_DIR + 'train_dataset.h5', 'r')
         ftest = h5py.File(DATA_DIR + 'test_dataset.h5', 'r')
 
-        train_data, train_labels = ftest['test_set_x'], ftest['test_set_y']
-        eval_data, eval_labels = ftrain['train_set_x'],  ftrain['train_set_y']
+        train_data, train_labels = ftrain['train_set_x'],  ftrain['train_set_y']
+        eval_data, eval_labels = ftest['test_set_x'], ftest['test_set_y']
 
         train_data = np.asarray(train_data, dtype=np.float32)
         # train_data = train_data/255.
@@ -85,13 +112,13 @@ def main(unused_argv):
             eval_labels, dtype=np.int32).reshape(eval_labels.shape[0])
 
         # Testing purposes...
-        plt.imshow(train_data[21])
-        plt.show()
+        # plt.imshow(train_data[21])
+        # plt.show()
 
         # Create the Estimator
         mnist_classifier = tf.estimator.Estimator(
             model_fn=cnn_model_fn,
-            model_dir="C:\\Users\\PC\\Downloads\\test_Conv\\Convolutional Models\\DatasetCreation\\tmp")
+            model_dir=MODEL_DIR)
 
         # Train the model
         train_input_fn = tf.estimator.inputs.numpy_input_fn(
