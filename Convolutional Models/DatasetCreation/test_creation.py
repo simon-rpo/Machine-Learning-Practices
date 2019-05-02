@@ -78,7 +78,11 @@ for i in range(1, t):
     features, labels = extract_features(parent_dir, file_ext, batch)
     # Si se requiere se hace alguno de los siguientes procesos.
     # Mesclar aleatoriamente la base de datos
-    x1, y1 = shuffle(features, labels)
+    #x1, y1 = shuffle(features, labels)
+    x1, y1 = features, labels
+
+    plt.imshow(x1[21])
+    plt.show()
 
     # O Separarla en entrenamieto y prueba (o si es necesario en validación)
     samples = y1.size

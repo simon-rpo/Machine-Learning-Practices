@@ -22,7 +22,7 @@ def cnn_model_fn(features, labels, mode):
 
     input_layer = tf.reshape(features["x"], [-1, 299, 299, 3])
 
-    #outputs = module(input_layer)
+    # outputs = module(input_layer)
     outputs = module(dict(images=input_layer),
                      signature="image_classification",
                      as_dict=True)
@@ -31,15 +31,24 @@ def cnn_model_fn(features, labels, mode):
 
     middle_output = outputs["InceptionV3/Mixed_7c"]
 
-    avgPool = tf.layers.average_pooling2d(
-        middle_output, (2, 2), (2, 2), padding='same')
+    avgPool = tf.layers.AveragePooling2D()(middle_output)
+
+    bn1 = tf.layers.batch_normalization(
+        avgPool, training=mode == tf.estimator.ModeKeys.TRAIN)
+
+    logits1 = tf.layers.dense(inputs=avgPool, units=128,
+                              activation=tf.nn.relu)
 
     dropout1 = tf.layers.dropout(
-        inputs=avgPool, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
+        inputs=logits1, rate=0.5, training=mode == tf.estimator.ModeKeys.TRAIN)
 
-    flatten = tf.layers.flatten(dropout1)
+    logits2 = tf.layers.dense(inputs=dropout1, units=64,
+                              activation=tf.nn.relu)
 
-    logits = tf.layers.dense(inputs=flatten, units=3)
+    dropout2 = tf.layers.dropout(
+        inputs=logits2, rate=0.5, training=mode == tf.estimator.ModeKeys.TRAIN)
+
+    logits = tf.layers.dense(inputs=dropout2, units=3)
 
     predictions = {
         # Generate predictions (for PREDICT and EVAL mode)
@@ -66,7 +75,7 @@ def cnn_model_fn(features, labels, mode):
 
         summary_hook = tf.train.SummarySaverHook(
             100,
-            output_dir=MODEL_DIR+'\\tf',
+            output_dir=MODEL_DIR,
             summary_op=tf.summary.merge_all())
 
         return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op,
@@ -93,27 +102,27 @@ def adjust_image(data):
 def main(unused_argv):
     with tf.Graph().as_default() as g:
             # Load training and eval data
-        ftrain = h5py.File(DATA_DIR + 'train_dataset.h5', 'r')
-        ftest = h5py.File(DATA_DIR + 'test_dataset.h5', 'r')
+        ftrain = h5py.File(DATA_DIR + 'train_dataset_1_.h5', 'r')
+        ftest = h5py.File(DATA_DIR + 'test_dataset_1_.h5', 'r')
 
         train_data, train_labels = ftrain['train_set_x'],  ftrain['train_set_y']
         eval_data, eval_labels = ftest['test_set_x'], ftest['test_set_y']
 
         train_data = np.asarray(train_data, dtype=np.float32)
-        # train_data = train_data/255.
+        train_data = train_data/255.
         # train_data = skimage.color.rgb2gray(train_data)
         train_labels = np.asarray(
             train_labels, dtype=np.int32).reshape(train_labels.shape[0])
 
         eval_data = np.asarray(eval_data, dtype=np.float32)
-        # eval_data = eval_data/255.
+        eval_data = eval_data/255.
         # eval_data = skimage.color.rgb2gray(eval_data)
         eval_labels = np.asarray(
             eval_labels, dtype=np.int32).reshape(eval_labels.shape[0])
 
         # Testing purposes...
-        # plt.imshow(train_data[21])
-        # plt.show()
+        plt.imshow(train_data[21])
+        plt.show()
 
         # Create the Estimator
         mnist_classifier = tf.estimator.Estimator(
